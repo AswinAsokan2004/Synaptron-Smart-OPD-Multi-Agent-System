@@ -1,0 +1,998 @@
+{
+  "name": "AI Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "system_prompt: |\nAlways use the tool \"Doctor List\".\n  You are an intelligent OPD assistant.\n  **Always use the tool \"Doctor List\"**\n\n  Your job is to help users with either:\n\n  1. Doctor recommendations based on user input such as symptoms, specialization, gender, or preferences.\n  2. General outpatient-related queries such as OPD timings, appointment procedures, location, insurance, etc.\n\n  When a user sends a message:\n  - First, identify the intent of the user:\n    • Is it a DOCTOR_SEARCH intent? (doctor recommendation)\n    • Or a GENERAL_QUERY intent? (any other OPD-related question)\n\n  **Use the tool \"Doctor List\" if the user asks about or for a doctor.**\nIf Doctor List is used, then based on the feedback recommend the user the best doctor. Dont give the feedback as output.\n  IF it’s a DOCTOR_SEARCH intent:\n    - Use the \"Doctor List\" tool to search and recommend the most suitable doctor.\n    - Recommend the best doctor for the user's purpose.\n    - Provide the doctor's name, specialization, availability, and any key highlights.\n\n  IF it’s a GENERAL_QUERY:\n    - Answer the question directly based on your knowledge or memory.\n\n  Always be polite, concise, and context-aware.\n\n  Respond in a strict JSON format.\n\n  If the user requests to book a consultation with a specific doctor, set the field `\"book\": true`.  \n  Otherwise, if the user is asking for doctor recommendations or has any other general question, set `\"book\": false`.\n\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        -128,
+        -16
+      ],
+      "id": "6d6c3bd1-d53b-413d-8418-5b7be594723e",
+      "name": "AI Agent",
+      "retryOnFail": true,
+      "maxTries": 5
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -272,
+        192
+      ],
+      "id": "6d56ce9b-d33e-4097-83c6-94c280adf2fb",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GBHNua6RdwjM27N8",
+          "name": "Google Gemini(PaLM) Api account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "The database consist of name and corresponding feedback of doctors. have the information about the expertise of the user.",
+        "pineconeIndex": {
+          "__rl": true,
+          "value": "synaptrondoctorset",
+          "mode": "list",
+          "cachedResultName": "synaptrondoctorset"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePinecone",
+      "typeVersion": 1.3,
+      "position": [
+        -240,
+        480
+      ],
+      "id": "7310beff-8487-403d-9a0a-bfcdabc9a3bb",
+      "name": "Doctor List",
+      "credentials": {
+        "pineconeApi": {
+          "id": "6FVrPw9lNMxX2cS3",
+          "name": "PineconeApi account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/embedding-001"
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -400,
+        624
+      ],
+      "id": "046fb113-9d6c-4e23-89de-d860a9ed6170",
+      "name": "Embeddings Google Gemini",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GBHNua6RdwjM27N8",
+          "name": "Google Gemini(PaLM) Api account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "text": "={{ $json.output.Output }}",
+        "attributes": {
+          "attributes": [
+            {
+              "name": "doctor_name",
+              "description": "name of the doctor mentioned in the text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.informationExtractor",
+      "typeVersion": 1.2,
+      "position": [
+        480,
+        -16
+      ],
+      "id": "072526d1-4361-46a3-8792-3b2fc1e415c1",
+      "name": "Information Extractor1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        528,
+        160
+      ],
+      "id": "5317c006-07f1-45e5-a21d-2ffcdd99cc57",
+      "name": "Google Gemini Chat Model2",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GBHNua6RdwjM27N8",
+          "name": "Google Gemini(PaLM) Api account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\t\"Output\":\n\"I cannot directly book appointments for you. However, I found a doctor named Arun Vijo who specializes in Gynecology. To book a consultation with Dr. Arun Vijo, please visit our official hospital website or call our reception desk directly.\",\n  \"book\": true\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        48,
+        400
+      ],
+      "id": "ebf79a68-b363-4868-a769-68f137a2bbaa",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "1768f983-7284-4ef5-b237-10a2680a05d4",
+              "leftValue": "={{ $json.output.book }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        224,
+        160
+      ],
+      "id": "d0d1cda8-c64b-4c5f-ba5f-618c2d97df7e",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "a9d8f2e8-611c-4576-8841-c73b801a190a",
+              "name": "output.Output",
+              "value": "={{ $json.output.Output }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        432,
+        320
+      ],
+      "id": "9debc783-c48d-4fec-b4a6-4573a568c8e2",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.output.doctor_name }}",
+        "hasOutputParser": true,
+        "options": {
+          "systemMessage": "You are a helpful assistant for name matching. The doctor_name passed to you may have some variation from the original name. You should always use the tool \"Doctor Fetch\", and find out which is the most matching doctor with that name. always return the responds in a strict JSON format consisting of only the field \"doctor_name\"."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.1,
+      "position": [
+        832,
+        -16
+      ],
+      "id": "ebea5d6a-48e7-4651-83ba-06a12f5cc75c",
+      "name": "AI Agent1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        704,
+        192
+      ],
+      "id": "1330ef38-7b94-4b13-9b72-40818f56cd05",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GBHNua6RdwjM27N8",
+          "name": "Google Gemini(PaLM) Api account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1mmO1RYH2VqurKql3tGKn5ycsnqpqCv3TRb4Lok4q9R0",
+          "mode": "list",
+          "cachedResultName": "Doctor Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mmO1RYH2VqurKql3tGKn5ycsnqpqCv3TRb4Lok4q9R0/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Doctor Details",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1mmO1RYH2VqurKql3tGKn5ycsnqpqCv3TRb4Lok4q9R0/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheetsTool",
+      "typeVersion": 4.6,
+      "position": [
+        800,
+        352
+      ],
+      "id": "02cda5b2-874b-4113-abff-16bceaa2db13",
+      "name": "Get row(s) in sheet in Google Sheets",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "A9PW14XMhLj6MinG",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n\"doctor_name\":\"Dr Alex Babu\"\n}",
+        "autoFix": true
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1072,
+        208
+      ],
+      "id": "068b15e7-453c-4b1c-8581-76547eb85cc9",
+      "name": "Structured Output Parser1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        1056,
+        320
+      ],
+      "id": "ab99a7ab-ab4f-467e-a9db-0f7f6de1ad3a",
+      "name": "Google Gemini Chat Model5",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GBHNua6RdwjM27N8",
+          "name": "Google Gemini(PaLM) Api account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "71a3ae87-562a-4080-a433-0cbbd49c1f8c",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            },
+            {
+              "id": "6d45a094-d3b7-4799-a071-50e710e24d32",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "available",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1504,
+        -16
+      ],
+      "id": "119a79c4-d95e-47a8-98dd-eb056ca67b65",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "19ebc07b-37ba-4131-8e27-f46b9730922d",
+              "name": "row_number",
+              "value": "={{ $json.id }}",
+              "type": "number"
+            },
+            {
+              "id": "8f2d56b2-72af-4cc9-8b70-20beb681de4f",
+              "name": "slot",
+              "value": "={{ $json.slot }}",
+              "type": "string"
+            },
+            {
+              "id": "005927b1-4f68-4798-b361-1107c8265db0",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "4314d143-d4c9-46ae-8166-21aaf82ac07b",
+              "name": "doctor",
+              "value": "={{ $json.doctor }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1712,
+        -256
+      ],
+      "id": "66df862f-c71f-4186-a984-4d8fec49d81c",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "{\n  \"status\":\"Failed for Consultation booking due to mismatching. Please try again with valid chat or try calling reception directly.\"\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2208,
+        304
+      ],
+      "id": "2bdd3cb6-105a-4169-8ca9-b565f8905b80",
+      "name": "Edit Fields3"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-2.5-pro",
+          "mode": "list",
+          "cachedResultName": "models/gemini-2.5-pro"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Doctor name: {{ $('If1').item.json.doctor }} , booked slot: {{ $('If1').item.json.slot }}"
+            }
+          ]
+        },
+        "options": {
+          "systemMessage": "You are a helpful assistant in giving the confirmation message to the patient who have booked for the consultation for the doctor specified in the promt and the slot in the prompt. Only just summarize. that their booking is confirmed."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1,
+      "position": [
+        2720,
+        -304
+      ],
+      "id": "bbd0627b-2708-4239-bfa9-1319e279400e",
+      "name": "Message a model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GBHNua6RdwjM27N8",
+          "name": "Google Gemini(PaLM) Api account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Doctor_Database",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabaseTool",
+      "typeVersion": 1,
+      "position": [
+        944,
+        192
+      ],
+      "id": "62d295d3-6b23-45be-8ce5-fbb96d39da88",
+      "name": "Doctor Fetch",
+      "credentials": {
+        "supabaseApi": {
+          "id": "TLhamLCrkVt8SIWE",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "Doctor_Slot",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "doctor",
+              "condition": "eq",
+              "keyValue": "={{ $json.output.doctor_name }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1184,
+        -16
+      ],
+      "id": "42c19a58-3a9c-4f1b-a623-6c6f01bb42de",
+      "name": "Get many rows",
+      "credentials": {
+        "supabaseApi": {
+          "id": "TLhamLCrkVt8SIWE",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "Reception",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "Doctor Name",
+              "fieldValue": "={{ $('Edit Fields2').item.json.doctor }}"
+            },
+            {
+              "fieldId": "slot",
+              "fieldValue": "={{ $('Edit Fields2').item.json.slot }}"
+            },
+            {
+              "fieldId": "Patient id",
+              "fieldValue": "={{ $json.unique_id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2192,
+        -576
+      ],
+      "id": "2418953d-3823-44b0-a586-dcf55239b558",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "TLhamLCrkVt8SIWE",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Doctor_Slot",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "id",
+              "condition": "eq",
+              "keyValue": "={{ $('Edit Fields2').item.json.row_number }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "status",
+              "fieldValue": "booked"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        2480,
+        -448
+      ],
+      "id": "59ed06fb-4c0b-448f-9d7a-0b8558209801",
+      "name": "Update a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "TLhamLCrkVt8SIWE",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "send-message",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*",
+          "rawBody": false
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -464,
+        -48
+      ],
+      "id": "3b4090c4-7f5d-48f0-b0ce-408209ff9ce8",
+      "name": "Webhook",
+      "webhookId": "144b7246-3fde-49c4-83d8-d0756298d5dc"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ { \"reply\": $json.output.Output } }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        608,
+        528
+      ],
+      "id": "eab7675e-3d55-454a-8e8e-b3441a87230c",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "184754",
+        "contextWindowLength": 2
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -144,
+        192
+      ],
+      "id": "b1db47ee-b913-4366-888c-e7abd239769d",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-pro",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        80,
+        608
+      ],
+      "id": "098d9d72-9e0e-4f14-9a5c-2bf292d709e3",
+      "name": "Google Gemini Chat Model4",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "GBHNua6RdwjM27N8",
+          "name": "Google Gemini(PaLM) Api account 4"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": \"{{ $json.content.parts[0].text }}\",\n\"book\":true,\n\"patientID\":\"{{ $('Code').item.json.unique_id }}\"\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        3120,
+        -160
+      ],
+      "id": "cd6f558c-6265-44cb-9b8e-3779ff71812a",
+      "name": "Respond to Webhook1"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"reply\": \"{{ $('Information Extractor1').item.json.output.doctor_name }} does'nt have the slot\"\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        3120,
+        96
+      ],
+      "id": "1e178a4d-1cb3-4273-8a70-dad3d56bc75a",
+      "name": "Respond to Webhook2"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Generate timestamp\nconst timestamp = new Date().toISOString(); // or use Date.now() for milliseconds\n\n// Generate a random 5-digit number\nconst randomNum = Math.floor(10000 + Math.random() * 90000);\n\n// Combine\nconst uniqueId = `${timestamp}-${randomNum}`;\n\n// Return the result\nreturn [\n  {\n    json: {\n      unique_id: uniqueId\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1936,
+        -448
+      ],
+      "id": "f1cecbb7-2b02-4e15-a1f4-94b36a0fc7f2",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 1456,
+        "width": 4000,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -560,
+        -656
+      ],
+      "typeVersion": 1,
+      "id": "7edf0f6c-51d2-47fc-8336-17ac7ed61935",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Doctor List": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings Google Gemini": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Doctor List",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Google Gemini Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Information Extractor1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Information Extractor1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Information Extractor1": {
+      "main": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent1": {
+      "main": [
+        [
+          {
+            "node": "Get many rows",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet in Google Sheets": {
+      "ai_tool": [
+        []
+      ]
+    },
+    "Structured Output Parser1": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model5": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser1",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Edit Fields3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Doctor Fetch": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent1",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get many rows": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a row": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model4": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Structured Output Parser",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields3": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "211adbf1-9411-42e6-b7c8-7b99f3733406",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ffd0e68667d01370c4bab10dc72a8aff2d2b4f92157bf28c42f2926e656f9463"
+  },
+  "id": "fWpRPyPjiBgTYVnt",
+  "tags": []
+}

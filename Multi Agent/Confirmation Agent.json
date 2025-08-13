@@ -1,0 +1,165 @@
+{
+  "name": "Confirmation Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "booking-confirmation",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5891b9c4-b794-42be-8ca6-5c8dbad1e5b7",
+      "name": "Webhook",
+      "webhookId": "ec9c828c-1301-4c32-96c3-452d88566c67"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "{\n  \"status\": \"success\"\n}",
+        "options": {
+          "responseCode": 200
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        624,
+        0
+      ],
+      "id": "af2a7a2d-b0e7-4f01-b1cf-bf2c92159e0f",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.body.email }}",
+        "subject": "=Your Appointment with {{ $json.body['doctor Name'] }} is Confirmed – ID: {{ $json.body.patient_id }}",
+        "message": "=<p>Dear Patient,</p>  <p>Your appointment with <strong>{{ $json.body['doctor Name'] }} </strong> has been successfully confirmed.</p>  <p>   <strong>Appointment Slot:</strong> {{ $json.body.slot }} <br>   <strong>Appointment ID:</strong> {{ $json.body.patient_id }} </p>  <p>Thank you for choosing our service. We look forward to seeing you at your scheduled time.</p>  <p>Best regards,<br> Appointment Team</p>",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "3b7ba1e7-3401-4897-9c01-e1b14d6bc842",
+      "name": "Send a message",
+      "webhookId": "95f12c8e-f9ac-4782-9120-dd3792310971",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "VXxerCA7Frizt4jv",
+          "name": "Gmail account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "tableId": "Reception",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "Patient id",
+              "condition": "eq",
+              "keyValue": "={{ $('Webhook').item.json.body.patient_id }}"
+            }
+          ]
+        },
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "patient email",
+              "fieldValue": "={{ $('Webhook').item.json.body.email }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "1e1028eb-5a6b-41b3-847c-ad9c90fc56ea",
+      "name": "Update a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "TLhamLCrkVt8SIWE",
+          "name": "Supabase account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "",
+        "height": 256,
+        "width": 992
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -112,
+        -80
+      ],
+      "typeVersion": 1,
+      "id": "47fe4815-7e83-4318-89d3-3fd679cad059",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send a message": {
+      "main": [
+        [
+          {
+            "node": "Update a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update a row": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2d8a7f43-2d9b-402e-bef5-24fe245c1e76",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "ffd0e68667d01370c4bab10dc72a8aff2d2b4f92157bf28c42f2926e656f9463"
+  },
+  "id": "16UWwUmXLwCgGszG",
+  "tags": []
+}
